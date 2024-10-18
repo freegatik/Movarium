@@ -1,0 +1,81 @@
+//
+//  SignInViewModel.swift
+//  Movarium
+//
+//  Created by Anton Solovev on 19.10.2024.
+//
+
+import Foundation
+import KeychainAccess
+
+final class SignInViewModel {
+    
+    weak var appRouterDelegate: AppRouterDelegate?
+    
+    private let signInUseCase: SignInUseCase
+    
+    var isSignInButtonActive: ((Bool) -> Void)?
+    var isLoading: ((Bool) -> Void)?
+    
+    private var credentials = LoginCredentials()
+    
+    private(set) var isUsernameValid: Bool = false {
+        didSet {
+            validateFields()
+        }
+    }
+    private(set) var isPasswordValid: Bool = false {
+        didSet {
+            validateFields()
+        }
+    }
+
+    init() {
+        self.signInUseCase = SignInUseCaseImpl.create()
+    }
+    
+    // MARK: - Public Methods
+    func updateUsername(_ username: String) {
+        self.credentials.username = username
+        isUsernameValid = isValidLatinCharacters(username) && !username.isEmpty
+        validateFields()
+    }
+
+    func updatePassword(_ password: String) {
+        self.credentials.password = password
+        isPasswordValid = isValidLatinCharacters(password) && !password.isEmpty
+        validateFields()
+    }
+    
+    func signInButtonTapped() async {
+        let requestBody = LoginCredentialsRequestModel(
+            username: credentials.username,
+            password: credentials.password
+        )
+        
+        isLoading?(true)
+        
+        // TODO: - заменить defer на async await
+        defer {
+            isLoading?(false)
+        }
+        do {
+            try await signInUseCase.execute(request: requestBody)
+            self.appRouterDelegate?.navigateToMain()
+        } catch {
+            print(error)
+        }
+    }
+    
+    // MARK: - Private Methods
+    private func isValidLatinCharacters(_ input: String) -> Bool {
+        let regularExpression = "^[A-Za-z0-9#?!@$%^&*-]+$"
+        let predicate = NSPredicate(format: "SELF MATCHES %@", regularExpression)
+        return predicate.evaluate(with: input)
+    }
+    
+    private func validateFields() {
+        let isValid = isUsernameValid && isPasswordValid
+        isSignInButtonActive?(isValid)
+    }
+}
