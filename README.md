@@ -2,8 +2,12 @@
 
 # Movarium
 ![Static Badge](https://img.shields.io/badge/platform-iOS-white)
-![Static Badge](https://img.shields.io/badge/lastet_release-v1.0.0-green)
+![Static Badge](https://img.shields.io/badge/latest_release-v1.0.0-green)
 ![Static Badge](https://img.shields.io/badge/swift-v5.10-orange)
+
+[![Build](https://github.com/freegatik/Movarium/actions/workflows/build.yml/badge.svg)](https://github.com/freegatik/Movarium/actions/workflows/build.yml)
+[![Unit Tests](https://github.com/freegatik/Movarium/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/freegatik/Movarium/actions/workflows/unit-tests.yml)
+[![Swift Lint](https://github.com/freegatik/Movarium/actions/workflows/lint.yml/badge.svg)](https://github.com/freegatik/Movarium/actions/workflows/lint.yml)
 
 # 📖 About
 An application for viewing a catalog of films with the ability to rate, add to favorites and view reviews.
@@ -22,9 +26,23 @@ Presentation → domain protocols / entities ← data (repos, DTOs, `AlamofireHT
 
 `PrivacyInfo.xcprivacy` in app target; extend when you use APIs that need privacy manifest entries.
 
+## CI
+
+Three workflows on [GitHub Actions](https://github.com/freegatik/Movarium/actions):
+
+| Workflow       | What it runs |
+|----------------|----------------|
+| **Build**      | `xcodebuild build` on a dedicated **Movarium CI** simulator (iOS runtime ≥ app deployment target) |
+| **Unit Tests** | `xcodebuild test` (unit + UI), code coverage + short `xccov` summary; uploads `.xcresult` on failure |
+| **Swift Lint** | `swiftlint lint --strict` on Xcode **16.2** |
+
+Build and Unit Tests share the composite action [`.github/actions/setup-ios-ci`](.github/actions/setup-ios-ci/action.yml) (Xcode **16.2**, first launch, iOS Simulator platform download) and [`.github/scripts/ensure-movarium-simulator.sh`](.github/scripts/ensure-movarium-simulator.sh) to create **`Movarium CI`** so `xcodebuild` uses a stable `platform=iOS Simulator,name=Movarium CI` destination.
+
+Dependabot: [`.github/dependabot.yml`](.github/dependabot.yml) bumps GitHub Actions pins weekly.
+
 ## Tooling
 
-SwiftLint: `.swiftlint.yml`. CI: `.github/workflows/ios.yml` (`CODE_SIGNING_ALLOWED=NO`).
+SwiftLint: `.swiftlint.yml`. CI uses Xcode **16.2** with split workflows under `.github/workflows/` (build, unit tests, lint).
 
 ## 💻 Tech Stack
 - Swift

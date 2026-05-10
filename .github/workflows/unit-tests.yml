@@ -1,0 +1,70 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 75
+    env:
+      IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup iOS CI (Xcode + platform)
+        uses: ./.github/actions/setup-ios-ci
+
+      - name: Create CI Simulator (simctl)
+        id: sim
+        run: |
+          chmod +x .github/scripts/ensure-movarium-simulator.sh
+          UDID="$(.github/scripts/ensure-movarium-simulator.sh)"
+          echo "UDID=${UDID}"
+          xcrun simctl boot "${UDID}" || true
+          xcrun simctl bootstatus "${UDID}" -b
+          xcrun simctl list devices available | grep -F "${UDID}" || true
+          {
+            echo "DESTINATION<<EOF"
+            echo "platform=iOS Simulator,name=Movarium CI"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Resolve SPM, unit & UI tests + coverage summary
+        run: |
+          set -eo pipefail
+          xcodebuild -resolvePackageDependencies \
+            -project Movarium.xcodeproj \
+            -scheme Movarium \
+            -destination "${{ steps.sim.outputs.DESTINATION }}"
+          RESULT_BUNDLE="${RUNNER_TEMP}/MovariumTests.xcresult"
+          rm -rf "${RESULT_BUNDLE}"
+          xcodebuild test \
+            -project Movarium.xcodeproj \
+            -scheme Movarium \
+            -destination "${{ steps.sim.outputs.DESTINATION }}" \
+            -resultBundlePath "${RESULT_BUNDLE}" \
+            -enableCodeCoverage YES \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+          echo "---- Coverage (Movarium.app, top of report) ----"
+          xcrun xccov view --report "${RESULT_BUNDLE}" | head -25
+
+      - name: Upload test result bundle on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Movarium-tests-xcresult
+          path: ${{ runner.temp }}/MovariumTests.xcresult
+          if-no-files-found: ignore
