@@ -52,6 +52,7 @@ if not runtimes:
 
 runtimes.sort(key=lambda r: ver_key(r["version"]))
 runtime_id = runtimes[0]["identifier"]
+selected_version = runtimes[0]["version"]
 print(
     "Using runtime %s (%s)" % (runtimes[0].get("name"), runtime_id),
     file=sys.stderr,
@@ -66,6 +67,7 @@ for rid, devs in dd.get("devices", {}).items():
         if rid == runtime_id:
             print("Found existing %s" % d["udid"], file=sys.stderr)
             print(d["udid"])
+            print(selected_version)
             raise SystemExit(0)
         print(
             "Deleting stale %s on other runtime %s" % (d["udid"], rid),
@@ -89,6 +91,7 @@ for dt in DEVICE_TYPES:
         print("Created %s with %s" % (udid, dt), file=sys.stderr)
         time.sleep(5)
         print(udid)
+        print(selected_version)
         raise SystemExit(0)
     except subprocess.CalledProcessError as e:
         print(

@@ -29,14 +29,18 @@ jobs:
         id: sim
         run: |
           chmod +x .github/scripts/ensure-movarium-simulator.sh
-          UDID="$(.github/scripts/ensure-movarium-simulator.sh)"
+          exec 3< <(.github/scripts/ensure-movarium-simulator.sh)
+          read -r UDID <&3
+          read -r SIM_OS <&3
+          exec 3<&-
           echo "UDID=${UDID}"
+          echo "SIM_OS=${SIM_OS}"
           xcrun simctl boot "${UDID}" || true
           xcrun simctl bootstatus "${UDID}" -b
           xcrun simctl list devices available | grep -F "${UDID}" || true
           {
             echo "DESTINATION<<EOF"
-            echo "platform=iOS Simulator,id=${UDID}"
+            echo "platform=iOS Simulator,id=${UDID},OS=${SIM_OS}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
