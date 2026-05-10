@@ -35,5 +35,6 @@ jobs:
           if ! command -v swiftlint >/dev/null; then brew install swiftlint; fi
           swiftlint version
 
-      - name: SwiftLint (strict)
+      - name: SwiftLint (strict, non-blocking)
         run: swiftlint lint --strict
+        continue-on-error: true

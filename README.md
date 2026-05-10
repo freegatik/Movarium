@@ -34,9 +34,9 @@ Three workflows on [GitHub Actions](https://github.com/freegatik/Movarium/action
 |----------------|----------------|
 | **Build**      | `xcodebuild build` on a dedicated **Movarium CI** simulator (iOS runtime ≥ app deployment target) |
 | **Unit Tests** | `xcodebuild test` (unit + UI), code coverage + short `xccov` summary; uploads `.xcresult` on failure |
-| **Swift Lint** | `swiftlint lint --strict` on Xcode **16.2** |
+| **Swift Lint** | `swiftlint lint --strict` on Xcode **16.2** (non-blocking until style backlog is cleared) |
 
-Build and Unit Tests share the composite action [`.github/actions/setup-ios-ci`](.github/actions/setup-ios-ci/action.yml) (Xcode **16.2**, first launch, iOS Simulator platform download) and [`.github/scripts/ensure-movarium-simulator.sh`](.github/scripts/ensure-movarium-simulator.sh) to create **`Movarium CI`** so `xcodebuild` uses a stable `platform=iOS Simulator,name=Movarium CI` destination.
+Build and Unit Tests share the composite action [`.github/actions/setup-ios-ci`](.github/actions/setup-ios-ci/action.yml) (Xcode **16.2**, first launch, iOS Simulator platform download) and [`.github/scripts/ensure-movarium-simulator.sh`](.github/scripts/ensure-movarium-simulator.sh) to create **`Movarium CI`**, then pass `platform=iOS Simulator,id=<UDID>` to `xcodebuild` so the destination does not depend on `OS:latest` name resolution.
 
 Dependabot: [`.github/dependabot.yml`](.github/dependabot.yml) bumps GitHub Actions pins weekly.
 

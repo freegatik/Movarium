@@ -36,7 +36,7 @@ jobs:
           xcrun simctl list devices available | grep -F "${UDID}" || true
           {
             echo "DESTINATION<<EOF"
-            echo "platform=iOS Simulator,name=Movarium CI"
+            echo "platform=iOS Simulator,id=${UDID}"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
