@@ -20,7 +20,7 @@ jobs:
       IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup iOS CI (Xcode + platform)
         uses: ./.github/actions/setup-ios-ci
