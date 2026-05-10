@@ -9,6 +9,32 @@
 import KeychainAccess
 import Foundation
 
+protocol AuthTokenKeychain: AnyObject, Sendable {
+    func setAuthToken(_ value: String) throws
+    func getAuthToken() throws -> String?
+    func removeAuthToken() throws
+}
+
+final class KeychainAuthTokenStore: AuthTokenKeychain, @unchecked Sendable {
+    private let keychain: Keychain
+
+    init(keychain: Keychain = Keychain()) {
+        self.keychain = keychain
+    }
+
+    func setAuthToken(_ value: String) throws {
+        try keychain.set(value, key: "authToken")
+    }
+
+    func getAuthToken() throws -> String? {
+        try keychain.get("authToken")
+    }
+
+    func removeAuthToken() throws {
+        try keychain.remove("authToken")
+    }
+}
+
 final class AlamofireHTTPClient: HTTPClient, @unchecked Sendable {
 
     private final class CallbackBox: @unchecked Sendable {
@@ -20,18 +46,18 @@ final class AlamofireHTTPClient: HTTPClient, @unchecked Sendable {
     
     private let baseURL: BaseURL
     private let session: Session
-    private let keychain: Keychain
+    private let authTokenKeychain: AuthTokenKeychain
     private let notificationCenter: NotificationCenter
     
     init(
         baseURL: BaseURL,
         session: Session = AF,
-        keychain: Keychain = Keychain(),
+        authTokenKeychain: AuthTokenKeychain = KeychainAuthTokenStore(),
         notificationCenter: NotificationCenter = .default
     ) {
         self.baseURL = baseURL
         self.session = session
-        self.keychain = keychain
+        self.authTokenKeychain = authTokenKeychain
         self.notificationCenter = notificationCenter
     }
     
@@ -88,7 +114,7 @@ final class AlamofireHTTPClient: HTTPClient, @unchecked Sendable {
     
     private func handleUnauthorizedError() {
         do {
-            try keychain.remove("authToken")
+            try authTokenKeychain.removeAuthToken()
         } catch {
             AppLog.auth.error("Keychain remove failed: \(String(describing: error))")
         }

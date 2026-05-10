@@ -6,9 +6,31 @@
 //
 
 import Alamofire
-import KeychainAccess
 import XCTest
 @testable import Movarium
+
+private final class FakeAuthTokenStore: AuthTokenKeychain, @unchecked Sendable {
+    private let lock = NSLock()
+    private var token: String?
+
+    func setAuthToken(_ value: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
+        token = value
+    }
+
+    func getAuthToken() throws -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        return token
+    }
+
+    func removeAuthToken() throws {
+        lock.lock()
+        defer { lock.unlock() }
+        token = nil
+    }
+}
 
 private final class URLProtocolStub: URLProtocol, @unchecked Sendable {
     static var requestHandler: (@Sendable (URLRequest) throws -> (HTTPURLResponse, Data?))?
@@ -102,16 +124,16 @@ final class AlamofireHTTPClientTests: XCTestCase {
 
     func testSendRequestWithoutResponseOnUnauthorizedClearsTokenAndPostsNotification() async throws {
         let session = makeSession()
-        let keychain = Keychain(service: "MovariumTests.AlamofireHTTPClientTests.\(UUID().uuidString)")
+        let authTokenStore = FakeAuthTokenStore()
         let notificationCenter = NotificationCenter()
         let sut = AlamofireHTTPClient(
             baseURL: .kreosoft,
             session: session,
-            keychain: keychain,
+            authTokenKeychain: authTokenStore,
             notificationCenter: notificationCenter
         )
 
-        try keychain.set("token-123", key: "authToken")
+        try authTokenStore.setAuthToken("token-123")
         let unauthorizedExpectation = expectation(
             forNotification: .unauthorizedErrorOccurred,
             object: nil,
@@ -134,7 +156,7 @@ final class AlamofireHTTPClientTests: XCTestCase {
         }
 
         await fulfillment(of: [unauthorizedExpectation], timeout: 1.0)
-        XCTAssertNil(try keychain.get("authToken"))
+        XCTAssertNil(try authTokenStore.getAuthToken())
     }
 
     private func makeSession() -> Session {
